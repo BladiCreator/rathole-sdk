@@ -1,4 +1,4 @@
-use crate::config::{ClientServiceConfig, ServerServiceConfig, TcpConfig, TransportConfig};
+use crate::config::{ClientServiceConfig, TcpConfig, TransportConfig};
 use crate::helper::{to_socket_addr, try_set_tcp_keepalive};
 use anyhow::{Context, Result};
 use async_trait::async_trait;
@@ -146,12 +146,6 @@ impl SocketOpts {
         }
     }
 
-    pub fn from_server_cfg(cfg: &ServerServiceConfig) -> SocketOpts {
-        SocketOpts {
-            nodelay: cfg.nodelay,
-            ..SocketOpts::none()
-        }
-    }
 
     pub fn apply(&self, conn: &TcpStream) {
         if let Some(v) = self.keepalive {

@@ -1,13 +1,8 @@
-use anyhow::{anyhow, Context, Result};
+use anyhow::{anyhow, Result};
 use async_http_proxy::{http_connect_tokio, http_connect_tokio_with_basic_auth};
-use backoff::{backoff::Backoff, Notify};
 use socket2::{SockRef, TcpKeepalive};
-use std::{future::Future, net::SocketAddr, time::Duration};
-use tokio::io::{AsyncWrite, AsyncWriteExt};
-use tokio::{
-    net::{lookup_host, TcpStream, ToSocketAddrs, UdpSocket},
-    sync::broadcast,
-};
+use std::{net::SocketAddr, time::Duration};
+use tokio::net::{lookup_host, TcpStream, ToSocketAddrs, UdpSocket};
 use tracing::trace;
 use url::Url;
 
@@ -159,37 +154,3 @@ pub async fn tcp_connect_with_proxy(
     }
 }
 
-// Wrapper of retry_notify
-pub async fn retry_notify_with_deadline<I, E, Fn, Fut, B, N>(
-    backoff: B,
-    operation: Fn,
-    notify: N,
-    deadline: &mut broadcast::Receiver<bool>,
-) -> Result<I>
-where
-    E: std::error::Error + Send + Sync + 'static,
-    B: Backoff,
-    Fn: FnMut() -> Fut,
-    Fut: Future<Output = std::result::Result<I, backoff::Error<E>>>,
-    N: Notify<E>,
-{
-    tokio::select! {
-        v = backoff::future::retry_notify(backoff, operation, notify) => {
-            v.map_err(anyhow::Error::new)
-        }
-        _ = deadline.recv() => {
-            Err(anyhow!("shutdown"))
-        }
-    }
-}
-
-pub async fn write_and_flush<T>(conn: &mut T, data: &[u8]) -> Result<()>
-where
-    T: AsyncWrite + Unpin,
-{
-    conn.write_all(data)
-        .await
-        .with_context(|| "Failed to write data")?;
-    conn.flush().await.with_context(|| "Failed to flush data")?;
-    Ok(())
-}
