@@ -34,12 +34,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let my_api = Service::builder()
         .name("api_backend")
         .local_addr("127.0.0.1:3000")
-        .token("token_seguro_123")
+        .token("use_a_secret_that_only_you_know")
         .build()?;
 
     // 2. Configure the client
     let client = Client::builder()
-        .remote_addr("127.0.0.1:2333") // Address of the rathole server
+        .remote_addr("myserver.com:2333") // Address of the rathole server
         .add_service(my_api)
         .build()?;
 
